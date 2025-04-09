@@ -187,12 +187,7 @@ where
                     Vertex::N(NodeId(Id::Plain(format!("n_{}", node_idx)), None)),
                     Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), None)),
                 ),
-                attributes: vec![
-                    Attribute(
-                        Id::Plain(String::from("arrowhead")),
-                        Id::Plain(String::from("normal")),
-                    ),
-                ],
+                attributes: vec![],
             };
             stmts.push(Stmt::Edge(edge));
         }
@@ -212,12 +207,7 @@ where
                     Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), port)),
                     Vertex::N(NodeId(Id::Plain(format!("n_{}", node_idx)), None)),
                 ),
-                attributes: vec![
-                    Attribute(
-                        Id::Plain(String::from("arrowhead")),
-                        Id::Plain(String::from("normal")),
-                    ),
-                ],
+                attributes: vec![],
             };
             stmts.push(Stmt::Edge(edge));
         }
@@ -261,15 +251,11 @@ where
                 attributes: vec![
                     Attribute(
                         Id::Plain(String::from("style")),
-                        Id::Plain(String::from("dashed")),
+                        Id::Plain(String::from("dotted")),
                     ),
                     Attribute(
                         Id::Plain(String::from("dir")),
                         Id::Plain(String::from("none")),
-                    ),
-                    Attribute(
-                        Id::Plain(String::from("constraint")),
-                        Id::Plain(String::from("false")),
                     ),
                 ],
             };
