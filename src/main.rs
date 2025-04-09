@@ -21,14 +21,14 @@ fn main() -> std::io::Result<()> {
     let mut graph = OpenHypergraph::<NodeType, Operation>::empty();
 
     // Add a Copy operation (1 → 2)
-    let (_, (_, x)) = graph.new_operation(
+    let (_, (input_nodes, x)) = graph.new_operation(
         Operation::Copy,
         vec![NodeType::A],
         vec![NodeType::B, NodeType::B],
     );
 
     // Add a Mul operation (2 → 1)
-    let (_, (y, _)) = graph.new_operation(
+    let (_, (y, output_nodes)) = graph.new_operation(
         Operation::Mul,
         vec![NodeType::B, NodeType::B],
         vec![NodeType::A],
@@ -37,6 +37,10 @@ fn main() -> std::io::Result<()> {
     // Connect copy outputs to multiply inputs
     graph.unify(x[0], y[0]);
     graph.unify(x[1], y[1]);
+
+    // Specify sources and targets for the interface
+    graph.sources = input_nodes;
+    graph.targets = output_nodes;
 
     // Generate GraphViz DOT representation
     let dot_graph = generate_dot(&graph);

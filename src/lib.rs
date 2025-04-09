@@ -23,7 +23,7 @@ where
         Id::Plain(String::from("rankdir")),
         Id::Plain(String::from("LR")),
     )));
-    
+
     // Add default node attributes statement
     dot_graph.add_stmt(Stmt::Node(Node {
         id: NodeId(Id::Plain(String::from("node")), None),
@@ -38,7 +38,7 @@ where
             ),
         ],
     }));
-    
+
     // Add default edge attributes statement
     dot_graph.add_stmt(Stmt::Node(Node {
         id: NodeId(Id::Plain(String::from("edge")), None),
@@ -53,7 +53,7 @@ where
             ),
         ],
     }));
-    
+
     // Add nodes for each node in the hypergraph
     let node_stmts = generate_node_stmts(graph);
     for stmt in node_stmts {
@@ -66,13 +66,19 @@ where
         dot_graph.add_stmt(stmt);
     }
 
+    // Add source and target interface nodes
+    let interface_stmts = generate_interface_stmts(graph);
+    for stmt in interface_stmts {
+        dot_graph.add_stmt(stmt);
+    }
+
     // Connect nodes to edges
     let connection_stmts = generate_connection_stmts(graph);
     for stmt in connection_stmts {
         dot_graph.add_stmt(stmt);
     }
 
-    // Add quotient connections (dashed lines between unified nodes)
+    // Add quotient connections (dotted lines between unified nodes)
     let quotient_stmts = generate_quotient_stmts(graph);
     for stmt in quotient_stmts {
         dot_graph.add_stmt(stmt);
@@ -205,7 +211,7 @@ where
                 None,
                 Some(format!("t_{}", j)),
             ));
-                
+
             let edge = Edge {
                 ty: EdgeTy::Pair(
                     Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), port)),
@@ -220,7 +226,136 @@ where
     stmts
 }
 
-/// Generate statements for quotient connections (dashed lines between unified nodes)
+/// Generate interface nodes for sources and targets of the hypergraph
+fn generate_interface_stmts<O, A>(graph: &OpenHypergraph<O, A>) -> Vec<Stmt>
+where
+    O: Clone + Debug + PartialEq,
+    A: Clone + Debug + PartialEq,
+{
+    let mut stmts = Vec::new();
+
+    // Create source interface record node
+    if !graph.sources.is_empty() {
+        // Create port sections for sources
+        let mut source_ports = String::new();
+        for i in 0..graph.sources.len() {
+            source_ports.push_str(&format!("<p_{i}> | "));
+        }
+        // Remove last " | "
+        if !source_ports.is_empty() {
+            source_ports.truncate(source_ports.len() - 3);
+        }
+
+        // Create the source interface node
+        stmts.push(Stmt::Node(Node {
+            id: NodeId(Id::Plain(String::from("sources")), None),
+            attributes: vec![
+                Attribute(
+                    Id::Plain(String::from("label")),
+                    Id::Plain(format!("\"{{ {} }}\"", source_ports)),
+                ),
+                Attribute(
+                    Id::Plain(String::from("shape")),
+                    Id::Plain(String::from("record")),
+                ),
+                Attribute(
+                    Id::Plain(String::from("style")),
+                    Id::Plain(String::from("invisible")),
+                ),
+                Attribute(
+                    Id::Plain(String::from("rank")),
+                    Id::Plain(String::from("source")),
+                ),
+            ],
+        }));
+
+        // Connect source interface ports to the source nodes
+        for (i, &source_node_id) in graph.sources.iter().enumerate() {
+            let edge = Edge {
+                ty: EdgeTy::Pair(
+                    Vertex::N(NodeId(
+                        Id::Plain(String::from("sources")),
+                        Some(Port(None, Some(format!("p_{}", i)))),
+                    )),
+                    Vertex::N(NodeId(
+                        Id::Plain(format!("n_{}", source_node_id.0)),
+                        None,
+                    )),
+                ),
+                attributes: vec![
+                    Attribute(
+                        Id::Plain(String::from("style")),
+                        Id::Plain(String::from("dashed")),
+                    ),
+                ],
+            };
+            stmts.push(Stmt::Edge(edge));
+        }
+    }
+
+    // Create target interface record node
+    if !graph.targets.is_empty() {
+        // Create port sections for targets
+        let mut target_ports = String::new();
+        for i in 0..graph.targets.len() {
+            target_ports.push_str(&format!("<p_{i}> | "));
+        }
+        // Remove last " | "
+        if !target_ports.is_empty() {
+            target_ports.truncate(target_ports.len() - 3);
+        }
+
+        // Create the target interface node
+        stmts.push(Stmt::Node(Node {
+            id: NodeId(Id::Plain(String::from("targets")), None),
+            attributes: vec![
+                Attribute(
+                    Id::Plain(String::from("label")),
+                    Id::Plain(format!("\"{{ {} }}\"", target_ports)),
+                ),
+                Attribute(
+                    Id::Plain(String::from("shape")),
+                    Id::Plain(String::from("record")),
+                ),
+                Attribute(
+                    Id::Plain(String::from("style")),
+                    Id::Plain(String::from("invisible")),
+                ),
+                Attribute(
+                    Id::Plain(String::from("rank")),
+                    Id::Plain(String::from("sink")),
+                ),
+            ],
+        }));
+
+        // Connect target nodes to target interface ports
+        for (i, &target_node_id) in graph.targets.iter().enumerate() {
+            let edge = Edge {
+                ty: EdgeTy::Pair(
+                    Vertex::N(NodeId(
+                        Id::Plain(format!("n_{}", target_node_id.0)),
+                        None,
+                    )),
+                    Vertex::N(NodeId(
+                        Id::Plain(String::from("targets")),
+                        Some(Port(None, Some(format!("p_{}", i)))),
+                    )),
+                ),
+                attributes: vec![
+                    Attribute(
+                        Id::Plain(String::from("style")),
+                        Id::Plain(String::from("dashed")),
+                    ),
+                ],
+            };
+            stmts.push(Stmt::Edge(edge));
+        }
+    }
+
+    stmts
+}
+
+/// Generate statements for quotient connections (dotted lines between unified nodes)
 fn generate_quotient_stmts<O, A>(graph: &OpenHypergraph<O, A>) -> Vec<Stmt>
 where
     O: Clone + Debug + PartialEq,
