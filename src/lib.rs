@@ -47,6 +47,10 @@ where
                 Id::Plain(String::from("color")),
                 Id::Plain(String::from("black")),
             ),
+            Attribute(
+                Id::Plain(String::from("arrowhead")),
+                Id::Plain(String::from("none")),
+            ),
         ],
     }));
     
