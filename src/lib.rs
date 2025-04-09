@@ -13,7 +13,7 @@ where
 {
     // Create a directed graph
     let mut dot_graph = Graph::DiGraph {
-        id: Id::Anonymous(String::new()),
+        id: Id::Plain(String::from("G")),
         strict: false,
         stmts: Vec::new(),
     };
@@ -24,14 +24,9 @@ where
         Id::Plain(String::from("LR")),
     )));
     
-    dot_graph.add_stmt(Stmt::Attribute(Attribute(
-        Id::Plain(String::from("bgcolor")),
-        Id::Plain(String::from("white")),
-    )));
-
-    // Set default node attributes
+    // Add default node attributes statement
     dot_graph.add_stmt(Stmt::Node(Node {
-        id: NodeId(Id::Anonymous(String::new()), None),
+        id: NodeId(Id::Plain(String::from("node")), None),
         attributes: vec![
             Attribute(
                 Id::Plain(String::from("shape")),
@@ -41,39 +36,20 @@ where
                 Id::Plain(String::from("style")),
                 Id::Plain(String::from("rounded")),
             ),
-            Attribute(
-                Id::Plain(String::from("fontcolor")),
-                Id::Plain(String::from("black")),
-            ),
-            Attribute(
-                Id::Plain(String::from("color")),
-                Id::Plain(String::from("black")),
-            ),
         ],
     }));
-
-    // Set default edge attributes
-    dot_graph.add_stmt(Stmt::Edge(Edge {
-        ty: EdgeTy::Pair(
-            Vertex::N(NodeId(Id::Anonymous(String::new()), None)),
-            Vertex::N(NodeId(Id::Anonymous(String::new()), None)),
-        ),
+    
+    // Add default edge attributes statement
+    dot_graph.add_stmt(Stmt::Node(Node {
+        id: NodeId(Id::Plain(String::from("edge")), None),
         attributes: vec![
             Attribute(
                 Id::Plain(String::from("color")),
                 Id::Plain(String::from("black")),
             ),
-            Attribute(
-                Id::Plain(String::from("fontcolor")),
-                Id::Plain(String::from("black")),
-            ),
-            Attribute(
-                Id::Plain(String::from("arrowhead")),
-                Id::Plain(String::from("none")),
-            ),
         ],
     }));
-
+    
     // Add nodes for each node in the hypergraph
     let node_stmts = generate_node_stmts(graph);
     for stmt in node_stmts {
@@ -121,7 +97,11 @@ where
                 ),
                 Attribute(
                     Id::Plain(String::from("xlabel")),
-                    Id::Plain(label),
+                    Id::Plain(format!("\"{}\"", label)),
+                ),
+                Attribute(
+                    Id::Plain(String::from("color")),
+                    Id::Plain(String::from("black")),
                 ),
             ],
         }));
@@ -160,15 +140,15 @@ where
             target_ports.truncate(target_ports.len() - 3); // Remove last " | "
         }
 
-        // Create full record label
+        // Create full record label with proper quoting for GraphViz DOT format
         let record_label = if source_ports.is_empty() && target_ports.is_empty() {
-            format!("{}", label)
+            format!("\"{}\"", label)
         } else if source_ports.is_empty() {
-            format!("{{ {} | {{ {} }} }}", label, target_ports)
+            format!("\"{{ {} | {{ {} }} }}\"", label, target_ports)
         } else if target_ports.is_empty() {
-            format!("{{ {{ {} }} | {} }}", source_ports, label)
+            format!("\"{{ {{ {} }} | {} }}\"", source_ports, label)
         } else {
-            format!("{{ {{ {} }} | {} | {{ {} }} }}", source_ports, label, target_ports)
+            format!("\"{{ {{ {} }} | {} | {{ {} }} }}\"", source_ports, label, target_ports)
         };
 
         stmts.push(Stmt::Node(Node {
@@ -207,7 +187,12 @@ where
                     Vertex::N(NodeId(Id::Plain(format!("n_{}", node_idx)), None)),
                     Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), None)),
                 ),
-                attributes: vec![],
+                attributes: vec![
+                    Attribute(
+                        Id::Plain(String::from("arrowhead")),
+                        Id::Plain(String::from("normal")),
+                    ),
+                ],
             };
             stmts.push(Stmt::Edge(edge));
         }
@@ -227,7 +212,12 @@ where
                     Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), port)),
                     Vertex::N(NodeId(Id::Plain(format!("n_{}", node_idx)), None)),
                 ),
-                attributes: vec![],
+                attributes: vec![
+                    Attribute(
+                        Id::Plain(String::from("arrowhead")),
+                        Id::Plain(String::from("normal")),
+                    ),
+                ],
             };
             stmts.push(Stmt::Edge(edge));
         }
