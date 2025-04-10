@@ -3,6 +3,7 @@ name = "open-hypergraphs-dot"
 version = "0.1.0"
 edition = "2024"
 description = "A library for visualizing lax open hypergraphs in GraphViz DOT format"
+license = "MIT"
 
 [lib]
 name = "open_hypergraphs_dot"
