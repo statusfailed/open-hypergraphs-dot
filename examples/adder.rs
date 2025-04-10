@@ -104,21 +104,19 @@ fn ripple_carry_adder(state: Builder, a: &[Var], b: &[Var]) -> (Vec<Var>, Var) {
 }
 
 // build a ripple_carry_adder and set its inputs/outputs
-fn n_bit_adder() -> Term {
+fn n_bit_adder(n: usize) -> Term {
     let state = Rc::new(RefCell::new(Term::empty()));
 
     {
-        let n = 2;
-
-        // inputs
-        //let xs = vec![Var::new(state.clone(), Bit); 2 * n];
+        // inputs: two n-bit numbers.
         let xs = (0..2 * n)
             .map(|_| Var::new(state.clone(), Bit))
             .collect::<Vec<_>>();
-        let (zs, _cout) = ripple_carry_adder(state.clone(), &xs[..n], &xs[n..]);
+        let (zs, cout) = ripple_carry_adder(state.clone(), &xs[..n], &xs[n..]);
 
         let sources: Vec<NodeId> = xs.into_iter().map(|x| x.new_source()).collect();
-        let targets: Vec<NodeId> = zs.into_iter().map(|x| x.new_target()).collect();
+        let mut targets: Vec<NodeId> = zs.into_iter().map(|x| x.new_target()).collect();
+        targets.push(cout.new_target());
 
         let mut term = state.borrow_mut();
         term.sources = sources;
@@ -129,7 +127,7 @@ fn n_bit_adder() -> Term {
     Rc::try_unwrap(state).unwrap().into_inner()
 }
 
-fn xor() -> Term {
+fn _xor() -> Term {
     let state = Rc::new(RefCell::new(Term::empty()));
 
     // Block contents make sure we don't
@@ -155,7 +153,7 @@ pub fn render_dot(graph: &Graph) -> String {
 }
 
 fn main() -> std::io::Result<()> {
-    let graph = n_bit_adder();
+    let graph = n_bit_adder(2);
 
     // Generate GraphViz DOT representation
     let dot_graph = generate_dot(&graph);
