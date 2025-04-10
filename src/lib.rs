@@ -3,12 +3,32 @@ use open_hypergraphs::lax::OpenHypergraph;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::fmt;
+
+/// Graph orientation for visualization
+#[derive(Debug, Clone, Copy)]
+pub enum Orientation {
+    /// Left to right layout
+    LR,
+    /// Top to bottom layout
+    TB,
+}
+
+impl fmt::Display for Orientation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Orientation::LR => write!(f, "LR"),
+            Orientation::TB => write!(f, "TB"),
+        }
+    }
+}
 
 /// Theme for graph visualization
 pub struct Theme {
     pub bgcolor: String,
     pub fontcolor: String,
     pub color: String,
+    pub orientation: Orientation,
 }
 
 impl Default for Theme {
@@ -17,6 +37,7 @@ impl Default for Theme {
             bgcolor: String::from("white"),
             fontcolor: String::from("black"),
             color: String::from("black"),
+            orientation: Orientation::LR,
         }
     }
 }
@@ -27,6 +48,7 @@ pub fn dark_theme() -> Theme {
         bgcolor: String::from("#4a4a4a"),
         fontcolor: String::from("white"),
         color: String::from("white"),
+        orientation: Orientation::LR,
     }
 }
 
@@ -46,7 +68,7 @@ where
     // Set graph attributes
     dot_graph.add_stmt(Stmt::Attribute(Attribute(
         Id::Plain(String::from("rankdir")),
-        Id::Plain(String::from("LR")),
+        Id::Plain(theme.orientation.to_string()),
     )));
 
     // Set background color
