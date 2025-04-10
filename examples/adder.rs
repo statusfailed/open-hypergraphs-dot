@@ -144,7 +144,7 @@ fn _xor() -> Term {
 
 use graphviz_rust::dot_structures::Graph;
 use graphviz_rust::printer::{DotPrinter, PrinterContext};
-use open_hypergraphs_dot::generate_dot;
+use open_hypergraphs_dot::{dark_theme, generate_dot};
 
 /// Render a graph to DOT format string
 pub fn render_dot(graph: &Graph) -> String {
@@ -155,8 +155,8 @@ pub fn render_dot(graph: &Graph) -> String {
 fn main() -> std::io::Result<()> {
     let graph = n_bit_adder(2);
 
-    // Generate GraphViz DOT representation
-    let dot_graph = generate_dot(&graph);
+    // Generate GraphViz DOT representation with custom theme
+    let dot_graph = generate_dot(&graph, &dark_theme());
     let dot_string = render_dot(&dot_graph);
 
     // Print DOT string

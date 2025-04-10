@@ -4,8 +4,34 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
+/// Theme for graph visualization
+pub struct Theme {
+    pub bgcolor: String,
+    pub fontcolor: String,
+    pub color: String,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Theme {
+            bgcolor: String::from("white"),
+            fontcolor: String::from("black"),
+            color: String::from("black"),
+        }
+    }
+}
+
+/// A dark theme preset
+pub fn dark_theme() -> Theme {
+    Theme {
+        bgcolor: String::from("#4a4a4a"),
+        fontcolor: String::from("white"),
+        color: String::from("white"),
+    }
+}
+
 /// Generates a GraphViz DOT representation of a lax open hypergraph
-pub fn generate_dot<O, A>(graph: &OpenHypergraph<O, A>) -> Graph
+pub fn generate_dot<O, A>(graph: &OpenHypergraph<O, A>, theme: &Theme) -> Graph
 where
     O: Clone + Debug + PartialEq + Hash,
     A: Clone + Debug + PartialEq,
@@ -23,6 +49,12 @@ where
         Id::Plain(String::from("LR")),
     )));
 
+    // Set background color
+    dot_graph.add_stmt(Stmt::Attribute(Attribute(
+        Id::Plain(String::from("bgcolor")),
+        Id::Plain(format!("\"{}\"", theme.bgcolor.clone())),
+    )));
+
     // Add default node attributes statement
     dot_graph.add_stmt(Stmt::Node(Node {
         id: NodeId(Id::Plain(String::from("node")), None),
@@ -35,6 +67,14 @@ where
                 Id::Plain(String::from("style")),
                 Id::Plain(String::from("rounded")),
             ),
+            Attribute(
+                Id::Plain(String::from("fontcolor")),
+                Id::Plain(format!("\"{}\"", theme.fontcolor.clone())),
+            ),
+            Attribute(
+                Id::Plain(String::from("color")),
+                Id::Plain(format!("\"{}\"", theme.color.clone())),
+            ),
         ],
     }));
 
@@ -43,8 +83,12 @@ where
         id: NodeId(Id::Plain(String::from("edge")), None),
         attributes: vec![
             Attribute(
+                Id::Plain(String::from("fontcolor")),
+                Id::Plain(format!("\"{}\"", theme.fontcolor.clone())),
+            ),
+            Attribute(
                 Id::Plain(String::from("color")),
-                Id::Plain(String::from("black")),
+                Id::Plain(format!("\"{}\"", theme.color.clone())),
             ),
             Attribute(
                 Id::Plain(String::from("arrowhead")),
@@ -107,10 +151,6 @@ where
                 Attribute(
                     Id::Plain(String::from("xlabel")),
                     Id::Plain(format!("\"{}\"", label)),
-                ),
-                Attribute(
-                    Id::Plain(String::from("color")),
-                    Id::Plain(String::from("black")),
                 ),
             ],
         }));
