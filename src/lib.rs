@@ -1,5 +1,4 @@
-use graphviz_rust::dot_structures::{Attribute, Edge, EdgeTy, Graph, Id, Node, NodeId, Port, Stmt, Vertex};
-use graphviz_rust::printer::{DotPrinter, PrinterContext};
+use dot_structures::{Attribute, Edge, EdgeTy, Graph, Id, Node, NodeId, Port, Stmt, Vertex};
 use open_hypergraphs::lax::OpenHypergraph;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -158,16 +157,16 @@ where
         } else if target_ports.is_empty() {
             format!("\"{{ {{ {} }} | {} }}\"", source_ports, label)
         } else {
-            format!("\"{{ {{ {} }} | {} | {{ {} }} }}\"", source_ports, label, target_ports)
+            format!(
+                "\"{{ {{ {} }} | {} | {{ {} }} }}\"",
+                source_ports, label, target_ports
+            )
         };
 
         stmts.push(Stmt::Node(Node {
             id: NodeId(Id::Plain(format!("e_{}", i)), None),
             attributes: vec![
-                Attribute(
-                    Id::Plain(String::from("label")),
-                    Id::Plain(record_label),
-                ),
+                Attribute(Id::Plain(String::from("label")), Id::Plain(record_label)),
                 Attribute(
                     Id::Plain(String::from("shape")),
                     Id::Plain(String::from("record")),
@@ -207,10 +206,7 @@ where
             let node_idx = node_id.0; // Convert NodeId to usize
 
             // Create a port with the correct format
-            let port = Some(Port(
-                None,
-                Some(format!("t_{}", j)),
-            ));
+            let port = Some(Port(None, Some(format!("t_{}", j))));
 
             let edge = Edge {
                 ty: EdgeTy::Pair(
@@ -252,7 +248,7 @@ where
             attributes: vec![
                 Attribute(
                     Id::Plain(String::from("label")),
-                    Id::Plain(format!("\"{{ {} }}\"", source_ports)),
+                    Id::Plain(format!("\"{{ {{}} | {{ {} }} }}\"", source_ports)),
                 ),
                 Attribute(
                     Id::Plain(String::from("shape")),
@@ -277,17 +273,12 @@ where
                         Id::Plain(String::from("sources")),
                         Some(Port(None, Some(format!("p_{}", i)))),
                     )),
-                    Vertex::N(NodeId(
-                        Id::Plain(format!("n_{}", source_node_id.0)),
-                        None,
-                    )),
+                    Vertex::N(NodeId(Id::Plain(format!("n_{}", source_node_id.0)), None)),
                 ),
-                attributes: vec![
-                    Attribute(
-                        Id::Plain(String::from("style")),
-                        Id::Plain(String::from("dashed")),
-                    ),
-                ],
+                attributes: vec![Attribute(
+                    Id::Plain(String::from("style")),
+                    Id::Plain(String::from("dashed")),
+                )],
             };
             stmts.push(Stmt::Edge(edge));
         }
@@ -311,7 +302,7 @@ where
             attributes: vec![
                 Attribute(
                     Id::Plain(String::from("label")),
-                    Id::Plain(format!("\"{{ {} }}\"", target_ports)),
+                    Id::Plain(format!("\"{{ {{ {} }} | {{}} }}\"", target_ports)),
                 ),
                 Attribute(
                     Id::Plain(String::from("shape")),
@@ -332,21 +323,16 @@ where
         for (i, &target_node_id) in graph.targets.iter().enumerate() {
             let edge = Edge {
                 ty: EdgeTy::Pair(
-                    Vertex::N(NodeId(
-                        Id::Plain(format!("n_{}", target_node_id.0)),
-                        None,
-                    )),
+                    Vertex::N(NodeId(Id::Plain(format!("n_{}", target_node_id.0)), None)),
                     Vertex::N(NodeId(
                         Id::Plain(String::from("targets")),
                         Some(Port(None, Some(format!("p_{}", i)))),
                     )),
                 ),
-                attributes: vec![
-                    Attribute(
-                        Id::Plain(String::from("style")),
-                        Id::Plain(String::from("dashed")),
-                    ),
-                ],
+                attributes: vec![Attribute(
+                    Id::Plain(String::from("style")),
+                    Id::Plain(String::from("dashed")),
+                )],
             };
             stmts.push(Stmt::Edge(edge));
         }
@@ -370,7 +356,7 @@ where
     let mut unified_nodes = HashMap::new();
 
     for (left, right) in lefts.iter().zip(rights.iter()) {
-        let left_idx = left.0;  // Access the internal usize
+        let left_idx = left.0; // Access the internal usize
         let right_idx = right.0;
 
         // Check if we've already seen this pair (in any order)
@@ -403,10 +389,4 @@ where
     }
 
     stmts
-}
-
-/// Render a graph to DOT format string
-pub fn render_dot(graph: &Graph) -> String {
-    let mut ctx = PrinterContext::default();
-    graph.print(&mut ctx)
 }
