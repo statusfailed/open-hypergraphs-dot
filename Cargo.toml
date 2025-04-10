@@ -11,7 +11,7 @@ path = "src/lib.rs"
 
 [dependencies]
 dot-structures = "0.1.1"
-open-hypergraphs = "0.1.5"
+open-hypergraphs = "0.1.6"
 
 [dev-dependencies]
 graphviz-rust = "0.9.3"
