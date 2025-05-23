@@ -1,9 +1,9 @@
 use dot_structures::{Attribute, Edge, EdgeTy, Graph, Id, Node, NodeId, Port, Stmt, Vertex};
 use open_hypergraphs::lax::OpenHypergraph;
 use std::collections::HashMap;
+use std::fmt;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::fmt;
 
 /// Graph orientation for visualization
 #[derive(Debug, Clone, Copy)]

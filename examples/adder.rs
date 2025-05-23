@@ -7,6 +7,7 @@
 //!   logically-and values in the hypergraph.
 //! - An example of an n-bit ripple carry adder
 //!
+use open_hypergraphs::lax::functor::*;
 use open_hypergraphs::lax::var;
 use open_hypergraphs::lax::*;
 
@@ -69,7 +70,7 @@ type Builder = Rc<RefCell<Term>>;
 type Var = var::Var<Bit, Gate>;
 
 fn zero(state: Builder) -> Var {
-    var::operation(&state, &[], Bit, Gate::Zero)
+    var::fn_operation(&state, &[], Bit, Gate::Zero)
 }
 
 fn full_adder(a: Var, b: Var, cin: Var) -> (Var, Var) {
@@ -105,46 +106,30 @@ fn ripple_carry_adder(state: Builder, a: &[Var], b: &[Var]) -> (Vec<Var>, Var) {
 
 // build a ripple_carry_adder and set its inputs/outputs
 fn n_bit_adder(n: usize) -> Term {
-    let state = Rc::new(RefCell::new(Term::empty()));
-
-    {
+    var::build(|state| {
         // inputs: two n-bit numbers.
         let xs = (0..2 * n)
             .map(|_| Var::new(state.clone(), Bit))
             .collect::<Vec<_>>();
-        let (zs, cout) = ripple_carry_adder(state.clone(), &xs[..n], &xs[n..]);
-
-        let sources: Vec<NodeId> = xs.into_iter().map(|x| x.new_source()).collect();
-        let mut targets: Vec<NodeId> = zs.into_iter().map(|x| x.new_target()).collect();
-        targets.push(cout.new_target());
-
-        let mut term = state.borrow_mut();
-        term.sources = sources;
-        term.targets = targets;
-    }
-
-    println!("reference count: {:?}", Rc::strong_count(&state));
-    Rc::try_unwrap(state).unwrap().into_inner()
+        let (mut zs, cout) = ripple_carry_adder(state.clone(), &xs[..n], &xs[n..]);
+        zs.push(cout);
+        (xs, zs)
+    })
+    .unwrap()
 }
 
-fn _xor() -> Term {
-    let state = Rc::new(RefCell::new(Term::empty()));
-
-    // Block contents make sure we don't
-    {
+fn xor() -> Term {
+    var::build(|state| {
         let xs = vec![Var::new(state.clone(), Bit); 2];
         let y = xs[0].clone() ^ xs[1].clone();
-
-        state.borrow_mut().sources = vec![xs[0].new_source(), xs[1].new_source()];
-        state.borrow_mut().targets = vec![y.new_target()];
-    }
-
-    Rc::try_unwrap(state).unwrap().into_inner()
+        (xs, vec![y])
+    })
+    .unwrap()
 }
 
 use graphviz_rust::dot_structures::Graph;
 use graphviz_rust::printer::{DotPrinter, PrinterContext};
-use open_hypergraphs_dot::{Orientation, dark_theme, generate_dot};
+use open_hypergraphs_dot::{dark_theme, generate_dot, Orientation};
 
 /// Render a graph to DOT format string
 pub fn render_dot(graph: &Graph) -> String {
@@ -152,12 +137,10 @@ pub fn render_dot(graph: &Graph) -> String {
     graph.print(&mut ctx)
 }
 
-fn main() -> std::io::Result<()> {
-    let graph = n_bit_adder(2);
-
+fn render_adder(graph: &Term, file_slug: String) -> std::io::Result<()> {
     // Generate GraphViz DOT representation with custom theme
     let mut theme = dark_theme();
-    theme.orientation = Orientation::LR;
+    theme.orientation = Orientation::TB;
     let dot_graph = generate_dot(&graph, &theme);
     let dot_string = render_dot(&dot_graph);
 
@@ -166,20 +149,30 @@ fn main() -> std::io::Result<()> {
     println!("{}", dot_string);
 
     // Save DOT to file
-    let output_path = "examples/adder.dot";
-    let mut file = File::create(output_path)?;
+    let output_path = format!("examples/{}.dot", file_slug);
+    let mut file = File::create(&output_path)?;
     file.write_all(dot_string.as_bytes())?;
-    println!("DOT file saved to {}", output_path);
+    println!("DOT file saved to {}", &output_path);
 
     // Try to render with GraphViz if available
-    let output_png = "examples/adder.png";
+    let output_png = format!("examples/{}.png", file_slug);
     match Command::new("dot")
-        .args(["-Tpng", output_path, "-o", output_png])
+        .args(["-Tpng", &output_path, "-o", &output_png])
         .status()
     {
-        Ok(status) if status.success() => println!("PNG image rendered to {}", output_png),
+        Ok(status) if status.success() => println!("PNG image rendered to {}", &output_png),
         _ => println!("Note: Install GraphViz to render the DOT file as an image."),
     }
 
     Ok(())
+}
+
+fn main() -> std::io::Result<()> {
+    // The term as built by n_bit_adder contains many Copy nodes because it uses the Var interface.
+    let graph = n_bit_adder(1);
+    render_adder(&graph, "adder".to_string())?;
+
+    // ... however, we can map these into wires as using the `Forget` functor as follows.
+    let graph = var::forget::Forget.map_arrow(&graph);
+    render_adder(&graph, "adder_novar".to_string())
 }
