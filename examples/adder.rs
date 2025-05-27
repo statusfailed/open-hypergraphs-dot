@@ -118,7 +118,7 @@ fn n_bit_adder(n: usize) -> Term {
     .unwrap()
 }
 
-#[warn(dead_code)]
+#[allow(dead_code)]
 fn xor() -> Term {
     var::build(|state| {
         let xs = vec![Var::new(state.clone(), Bit); 2];
@@ -142,7 +142,7 @@ fn render_adder(graph: &Term, file_slug: String) -> std::io::Result<()> {
     // Generate GraphViz DOT representation with custom theme
     let mut theme = dark_theme();
     theme.orientation = Orientation::TB;
-    let dot_graph = generate_dot(&graph, &theme);
+    let dot_graph = generate_dot(graph, &theme);
     let dot_string = render_dot(&dot_graph);
 
     // Print DOT string

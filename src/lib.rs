@@ -250,7 +250,7 @@ where
 
     // Connect source nodes to edge ports
     for (i, hyperedge) in graph.hypergraph.adjacency.iter().enumerate() {
-        for (_j, &node_id) in hyperedge.sources.iter().enumerate() {
+        for &node_id in hyperedge.sources.iter() {
             let node_idx = node_id.0; // Convert NodeId to usize
 
             let edge = Edge {
