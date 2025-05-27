@@ -118,6 +118,7 @@ fn n_bit_adder(n: usize) -> Term {
     .unwrap()
 }
 
+#[warn(dead_code)]
 fn xor() -> Term {
     var::build(|state| {
         let xs = vec![Var::new(state.clone(), Bit); 2];
