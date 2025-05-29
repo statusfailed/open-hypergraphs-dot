@@ -130,7 +130,7 @@ fn xor() -> Term {
 
 use graphviz_rust::dot_structures::Graph;
 use graphviz_rust::printer::{DotPrinter, PrinterContext};
-use open_hypergraphs_dot::{dark_theme, generate_dot, Orientation};
+use open_hypergraphs_dot::{generate_dot_with, Options, Orientation};
 
 /// Render a graph to DOT format string
 pub fn render_dot(graph: &Graph) -> String {
@@ -138,11 +138,32 @@ pub fn render_dot(graph: &Graph) -> String {
     graph.print(&mut ctx)
 }
 
+pub fn edge_label(g: &Gate) -> String {
+    use Gate::*;
+    println!("{:?}", g);
+    match g {
+        Not => "!",
+        Xor => "+",
+        Zero => "0",
+        Or => "∨",
+        And => "∧",
+        One => "1",
+        Copy => "Δ",
+    }
+    .to_string()
+}
+
 fn render_adder(graph: &Term, file_slug: String) -> std::io::Result<()> {
     // Generate GraphViz DOT representation with custom theme
-    let mut theme = dark_theme();
-    theme.orientation = Orientation::TB;
-    let dot_graph = generate_dot(graph, &theme);
+    let opts = Options {
+        orientation: Orientation::TB,
+        // hide all the node labels by default, since they are all 'Bit'
+        node_label: Box::new(|_n| "".to_string()),
+        edge_label: Box::new(edge_label),
+        ..Default::default()
+    };
+
+    let dot_graph = generate_dot_with(graph, &opts);
     let dot_string = render_dot(&dot_graph);
 
     // Print DOT string

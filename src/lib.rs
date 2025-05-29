@@ -1,63 +1,26 @@
 use dot_structures::{Attribute, Edge, EdgeTy, Graph, Id, Node, NodeId, Port, Stmt, Vertex};
 use open_hypergraphs::lax::OpenHypergraph;
-use std::collections::HashMap;
-use std::fmt;
 use std::fmt::Debug;
-use std::hash::Hash;
 
-/// Graph orientation for visualization
-#[derive(Debug, Clone, Copy)]
-pub enum Orientation {
-    /// Left to right layout
-    LR,
-    /// Top to bottom layout
-    TB,
-}
+pub mod options;
+pub use options::*;
 
-impl fmt::Display for Orientation {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Orientation::LR => write!(f, "LR"),
-            Orientation::TB => write!(f, "TB"),
-        }
-    }
-}
-
-/// Theme for graph visualization
-pub struct Theme {
-    pub bgcolor: String,
-    pub fontcolor: String,
-    pub color: String,
-    pub orientation: Orientation,
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Theme {
-            bgcolor: String::from("white"),
-            fontcolor: String::from("black"),
-            color: String::from("black"),
-            orientation: Orientation::LR,
-        }
-    }
-}
-
-/// A dark theme preset
-pub fn dark_theme() -> Theme {
-    Theme {
-        bgcolor: String::from("#4a4a4a"),
-        fontcolor: String::from("white"),
-        color: String::from("white"),
-        orientation: Orientation::LR,
-    }
+pub fn generate_dot<O, A>(graph: &OpenHypergraph<O, A>) -> Graph
+where
+    O: Clone + Debug + PartialEq,
+    A: Clone + Debug + PartialEq,
+{
+    generate_dot_with(graph, &Options::default())
 }
 
 /// Generates a GraphViz DOT representation of a lax open hypergraph
-pub fn generate_dot<O, A>(graph: &OpenHypergraph<O, A>, theme: &Theme) -> Graph
+pub fn generate_dot_with<O, A>(graph: &OpenHypergraph<O, A>, opts: &Options<O, A>) -> Graph
 where
-    O: Clone + Debug + PartialEq + Hash,
+    O: Clone + Debug + PartialEq,
     A: Clone + Debug + PartialEq,
 {
+    let theme = &opts.theme;
+
     // Create a directed graph
     let mut dot_graph = Graph::DiGraph {
         id: Id::Plain(String::from("G")),
@@ -68,7 +31,7 @@ where
     // Set graph attributes
     dot_graph.add_stmt(Stmt::Attribute(Attribute(
         Id::Plain(String::from("rankdir")),
-        Id::Plain(theme.orientation.to_string()),
+        Id::Plain(opts.orientation.to_string()),
     )));
 
     // Set background color
@@ -120,13 +83,13 @@ where
     }));
 
     // Add nodes for each node in the hypergraph
-    let node_stmts = generate_node_stmts(graph);
+    let node_stmts = generate_node_stmts(graph, opts);
     for stmt in node_stmts {
         dot_graph.add_stmt(stmt);
     }
 
     // Add record nodes for each hyperedge
-    let edge_stmts = generate_edge_stmts(graph);
+    let edge_stmts = generate_edge_stmts(graph, opts);
     for stmt in edge_stmts {
         dot_graph.add_stmt(stmt);
     }
@@ -152,8 +115,27 @@ where
     dot_graph
 }
 
+// Unfortunately this seems to be a fundamental limitation of the dot syntax;
+// See https://forum.graphviz.org/t/how-do-i-properly-escape-arbitrary-text-for-use-in-labels/1762
+// > Unfortunately, due to past mistakes, we realized there is no way to safely put
+// > arbitrary text in graphviz strings, as we made mistakes in handling quotes and escapes.
+fn escape_dot_label(s: &str) -> String {
+    s.chars()
+        .flat_map(|c| match c {
+            '\\' => Some("\\\\".to_string()),
+            '"' => Some("\\\"".to_string()),
+            '{' => Some("\\{".to_string()),
+            '}' => Some("\\}".to_string()),
+            '|' => Some("\\|".to_string()),
+            '<' => Some("\\<".to_string()),
+            '>' => Some("\\>".to_string()),
+            _ => Some(c.to_string()),
+        })
+        .collect()
+}
+
 /// Generate node statements for each node in the hypergraph
-fn generate_node_stmts<O, A>(graph: &OpenHypergraph<O, A>) -> Vec<Stmt>
+fn generate_node_stmts<O, A>(graph: &OpenHypergraph<O, A>, opts: &Options<O, A>) -> Vec<Stmt>
 where
     O: Clone + Debug + PartialEq,
     A: Clone + Debug + PartialEq,
@@ -161,7 +143,10 @@ where
     let mut stmts = Vec::new();
 
     for i in 0..graph.hypergraph.nodes.len() {
-        let label = format!("{:?}", graph.hypergraph.nodes[i]);
+        let label = (opts.node_label)(&graph.hypergraph.nodes[i]);
+
+        // Escape special dot characters.
+        let label = escape_dot_label(&label);
 
         stmts.push(Stmt::Node(Node {
             id: NodeId(Id::Plain(format!("n_{}", i)), None),
@@ -182,7 +167,7 @@ where
 }
 
 /// Generate record node statements for each hyperedge
-fn generate_edge_stmts<O, A>(graph: &OpenHypergraph<O, A>) -> Vec<Stmt>
+fn generate_edge_stmts<O, A>(graph: &OpenHypergraph<O, A>, opts: &Options<O, A>) -> Vec<Stmt>
 where
     O: Clone + Debug + PartialEq,
     A: Clone + Debug + PartialEq,
@@ -191,7 +176,8 @@ where
 
     for i in 0..graph.hypergraph.edges.len() {
         let hyperedge = &graph.hypergraph.adjacency[i];
-        let label = format!("{:?}", graph.hypergraph.edges[i]);
+        let label = (opts.edge_label)(&graph.hypergraph.edges[i]);
+        let label = escape_dot_label(&label);
 
         // Create port sections for sources
         let mut source_ports = String::new();
@@ -415,7 +401,7 @@ where
     let (lefts, rights) = &graph.hypergraph.quotient;
 
     // Create a map to track which nodes are unified
-    let mut unified_nodes = HashMap::new();
+    let mut unified_nodes = std::collections::HashMap::new();
 
     for (left, right) in lefts.iter().zip(rights.iter()) {
         let left_idx = left.0; // Access the internal usize

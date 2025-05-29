@@ -1,5 +1,5 @@
 use open_hypergraphs::lax::OpenHypergraph;
-use open_hypergraphs_dot::{Orientation, dark_theme, generate_dot};
+use open_hypergraphs_dot::generate_dot;
 
 use std::fs::File;
 use std::hash::Hash;
@@ -53,10 +53,8 @@ fn main() -> std::io::Result<()> {
     graph.sources = input_nodes;
     graph.targets = output_nodes;
 
-    // Generate GraphViz DOT representation with dark theme
-    let mut theme = dark_theme();
-    theme.orientation = Orientation::TB;
-    let dot_graph = generate_dot(&graph, &theme);
+    // Generate GraphViz DOT representation
+    let dot_graph = generate_dot(&graph);
     let dot_string = render_dot(&dot_graph);
 
     // Print DOT string
