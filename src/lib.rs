@@ -234,15 +234,18 @@ where
 {
     let mut stmts = Vec::new();
 
-    // Connect source nodes to edge ports
     for (i, hyperedge) in graph.hypergraph.adjacency.iter().enumerate() {
-        for &node_id in hyperedge.sources.iter() {
+        // Connections n_i → e_j:p_k
+        for (j, &node_id) in hyperedge.sources.iter().enumerate() {
             let node_idx = node_id.0; // Convert NodeId to usize
+
+            // Create a port with the correct format
+            let port = Some(Port(None, Some(format!("s_{}", j))));
 
             let edge = Edge {
                 ty: EdgeTy::Pair(
                     Vertex::N(NodeId(Id::Plain(format!("n_{}", node_idx)), None)),
-                    Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), None)),
+                    Vertex::N(NodeId(Id::Plain(format!("e_{}", i)), port)),
                 ),
                 attributes: vec![],
             };
@@ -250,6 +253,7 @@ where
         }
 
         // Connect edge target ports to target nodes
+        // Connections e_j:p_k → n_i
         for (j, &node_id) in hyperedge.targets.iter().enumerate() {
             let node_idx = node_id.0; // Convert NodeId to usize
 
